@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_app/data/dummy_items.dart';
+import 'package:shopping_app/screens/new_item.dart';
 
 
 class GroceryScreen extends StatefulWidget {
@@ -10,6 +11,11 @@ class GroceryScreen extends StatefulWidget {
 }
 
 class _GroceryScreenState extends State<GroceryScreen> {
+
+  void _onTap(){
+    Navigator.of(context).push(MaterialPageRoute(builder: (ctx) =>const NewItem()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,6 +24,9 @@ class _GroceryScreenState extends State<GroceryScreen> {
             "Your Groceries",
             style: TextStyle(color: Colors.white),
           ),
+          actions: [
+            IconButton(onPressed: _onTap, icon:const Icon(Icons.add),
+        )]
         ),
         body: ListView.builder(
           itemCount: groceryItems.length,
@@ -35,6 +44,7 @@ class _GroceryScreenState extends State<GroceryScreen> {
             // )
             trailing: Text(groceryItems[index].quantity.toString()),
           ),
-        ));
+        )
+      );
   }
 }
