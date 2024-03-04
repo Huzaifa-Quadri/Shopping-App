@@ -35,6 +35,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
           surface: const Color.fromARGB(255, 42, 51, 59),
         ),
+        // textTheme: GoogleFonts().latoTextTheme,
         scaffoldBackgroundColor: const Color.fromARGB(255, 50, 58, 60),
       ),
       home: const GroceryScreen()
