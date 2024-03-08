@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shopping_app/data/categories.dart';
 import 'package:shopping_app/models/categories.dart';
-import 'package:shopping_app/models/grocery_item.dart';
+// import 'package:shopping_app/models/grocery_item.dart'; //? Now Swnding data to firebase(model is not used here)
+import 'package:http/http.dart' as http;
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -16,20 +19,37 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
-  void _saveItem(){
+  _saveItem() async {
     if(_formkey.currentState!.validate()){  // This will trigger validator function through key
     _formkey.currentState!.save();
 
-    Navigator.pop(context, GroceryItem(
-      id: DateTime.now().toString(), 
-      name: _enteredName,
-      quantity: _enteredQuantity, 
-      category: _selectedCategory));
+    final url = Uri.https('shopping-demo-app-cdce7-default-rtdb.firebaseio.com','shopping-list.json');    //* Creating a URl of https(as chosen) backend to give in below uri for http request
+    //? 'shopping list' is an identifier which will create node of same name in database, typically added after domain {after '/' in url link}
+    //! ALERT : The above URL is generated and copied from FIrebase real time database(reference link); this will not work after database is closed
+    
+    final response = await http.post(url, headers: {  //* Setting header to map where keys are identifier and values are setting for these headers
+      'Content-Type' : 'application/json'
+    },
+    body: json.encode( //?  converts data to this json formatted text. So it simply encodes the data to use this special format. For that encode needs an object that can easily be converted
+     {
+      'name' : _enteredName,
+      'quantity' : _enteredQuantity,
+      'category' : _selectedCategory.title,
+     }
+    ));
+    print(response.body);
+    print(response.statusCode);
+
+    if (!context.mounted) {
+      return;
+    } 
+
+    Navigator.pop(context);
     }
-    print(_enteredQuantity);
-    print(_enteredName);
-    print(_selectedCategory);
-    print(DateTime.now());
+    // print(_enteredQuantity);
+    // print(_enteredName);
+    // print(_selectedCategory);
+    // print(DateTime.now());
   }
 
   @override
