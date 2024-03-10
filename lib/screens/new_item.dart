@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shopping_app/data/categories.dart';
 import 'package:shopping_app/models/categories.dart';
-// import 'package:shopping_app/models/grocery_item.dart'; //? Now Swnding data to firebase(model is not used here)
+import 'package:shopping_app/models/grocery_item.dart'; 
 import 'package:http/http.dart' as http;
+
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -19,9 +20,14 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
+  var isSaving = false;
+
   _saveItem() async {
     if(_formkey.currentState!.validate()){  // This will trigger validator function through key
     _formkey.currentState!.save();
+    setState(() {
+      isSaving = true;  //for loading screen on button untill sent
+    });
 
     final url = Uri.https('shopping-demo-app-cdce7-default-rtdb.firebaseio.com','shopping-list.json');    //* Creating a URl of https(as chosen) backend to give in below uri for http request
     //? 'shopping list' is an identifier which will create node of same name in database, typically added after domain {after '/' in url link}
@@ -40,11 +46,19 @@ class _NewItemState extends State<NewItem> {
     print(response.body);
     print(response.statusCode);
 
+    final Map<String, dynamic>resId = json.decode(response.body);
+
     if (!context.mounted) {
       return;
     } 
 
-    Navigator.pop(context);
+    Navigator.pop(context,
+      GroceryItem(
+        id: resId['name'], 
+        name: _enteredName, 
+        quantity: _enteredQuantity, 
+        category: _selectedCategory)
+    );
     }
     // print(_enteredQuantity);
     // print(_enteredName);
@@ -136,14 +150,18 @@ class _NewItemState extends State<NewItem> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed:(){
+                  TextButton(onPressed:isSaving 
+                  ? null 
+                  :(){
                      _formkey.currentState!.reset();
                     }, 
                     child: const Text("Reset")),
 
                   ElevatedButton(
-                    onPressed: _saveItem, 
-                    child: const Text("Add Item")
+                    onPressed: isSaving ? null : _saveItem, 
+                    child: isSaving 
+                    ? const SizedBox(width: 12,height: 12,child: CircularProgressIndicator(),) 
+                    : const Text("Add Item")
                   )
                 ],
               )

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shopping_app/data/categories.dart';
-// import 'package:shopping_app/data/dummy_items.dart'; //We are giving totaally new values now 
+// import 'package:shopping_app/data/dummy_items.dart'; //We are giving totaly new values now 
 import 'package:shopping_app/models/grocery_item.dart';
 import 'package:shopping_app/screens/new_item.dart';
 
@@ -20,14 +20,24 @@ class GroceryScreen extends StatefulWidget {
 class _GroceryScreenState extends State<GroceryScreen> {
 
   List<GroceryItem> _groceryItems = []; //since we are now overriding it to another list (removed final)
+  var _isLoading = true;
+  String? _errorCode;
+
   @override
   void initState() {   //invoking func drom init state as it needs to feth data whenever the app restarts or reloades
     super.initState();
-    _loaditemsfromDB();
+    _loaditemsfromDB();  //not including await here since we are not returning any data
   }
   _loaditemsfromDB() async {
     final url = Uri.https('shopping-demo-app-cdce7-default-rtdb.firebaseio.com','shopping-list.json');
     final response = await http.get(url);
+    print(response.statusCode);
+    if(response.statusCode > 400){ //! Codes greater than 400 are error codes or indicate error
+      setState(() {
+        _errorCode = "Failed to fetch data! Try Again Later.";  
+      });
+    }
+
     final Map<String,dynamic> listData = json.decode(response.body);
     final List<GroceryItem> loadedlistitems = [];   //Temp list to store items
     for (final item in listData.entries) {
@@ -45,30 +55,47 @@ class _GroceryScreenState extends State<GroceryScreen> {
     }
     setState(() {
       _groceryItems = loadedlistitems;
+      _isLoading = false;
     });
     // print(response.body);
   }
   
 
   void _onTap() async { 
-    await Navigator.of(context).push<GroceryItem>(    //removed varibale initialization since same reason as below
+    final newItem = await Navigator.of(context).push<GroceryItem>(    //removed varibale initialization since same reason as below
       MaterialPageRoute(builder: (ctx) =>const NewItem())
     );
 
-    // if (newItem == null) {  //* Since we are now, not passing any data from pop (or returning)
-    //   return ;
-    // }
-    // setState(() {
-    //   _groceryItems.add(newItem);
-    // });
+    if (newItem == null) {
+      return ;
+    }
+    setState(() {
+      _groceryItems.add(newItem);
+    });
 
-    _loaditemsfromDB();  //not including await here since we are not returning any data
-    
+    // _loaditemsfromDB(); //! It is Retundent to perform HTTP request if we can send bakc data and stroing it on database at same time, so now we only perform GET Request when re-loading entire app.  
+                //? Things same as just before using http request(GET Method) ; Now, only using GET in case of reloading screen 
   }
-  void _removeItem(GroceryItem item){
+
+  void  _removeItem(GroceryItem item) async{
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
+    final url = Uri.https('shodeault-rtdb.firebaseio.com','shopping-list/${item.id}.json');
+    final response = await http.delete(url);
+
+    if (response.statusCode >= 400) {
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Some Error Occured, Item cannot be deleted !", style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),),backgroundColor: Colors.redAccent,));
+        _groceryItems.insert(index, item);
+      });
+    } 
+
+/*  //?  Delete WITHOUT Error Handling
+    final url = Uri.https('shopping-demo-app-cdce7-default-rtdb.firebaseio.com','shopping-list/${item.id}.json');
+    final response = http.delete(url);
+*/
   }
 
   @override
@@ -85,6 +112,14 @@ class _GroceryScreenState extends State<GroceryScreen> {
         ),
       ),
     );
+
+    if (_isLoading) {
+      bodyContent =const Center(child: CircularProgressIndicator(),); 
+    }
+
+    if (_errorCode != null) {
+      bodyContent = Center(child: Text(_errorCode!),);
+    }
         
 
   if (_groceryItems.isNotEmpty) {
