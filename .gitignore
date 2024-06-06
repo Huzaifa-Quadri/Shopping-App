@@ -44,5 +44,5 @@ app.*.map.json
 
 
 #To Ignore windows file
-windows/
+/windows
 *.cmake
