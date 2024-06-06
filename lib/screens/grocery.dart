@@ -38,6 +38,13 @@ class _GroceryScreenState extends State<GroceryScreen> {
       });
     }
 
+    if (response.body == 'null') { //! This logic here is backend specific; for firebase it is null but for other it can be status code 404 or empty sting or etc
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     final Map<String,dynamic> listData = json.decode(response.body);
     final List<GroceryItem> loadedlistitems = [];   //Temp list to store items
     for (final item in listData.entries) {
@@ -73,7 +80,7 @@ class _GroceryScreenState extends State<GroceryScreen> {
       _groceryItems.add(newItem);
     });
 
-    // _loaditemsfromDB(); //! It is Retundent to perform HTTP request if we can send bakc data and stroing it on database at same time, so now we only perform GET Request when re-loading entire app.  
+    // _loaditemsfromDB(); //! It is Retundent to perform HTTP request if we can send back data and stroing it on database at same time, so now we only perform GET Request when re-loading entire app.  
                 //? Things same as just before using http request(GET Method) ; Now, only using GET in case of reloading screen 
   }
 
@@ -82,7 +89,7 @@ class _GroceryScreenState extends State<GroceryScreen> {
     setState(() {
       _groceryItems.remove(item);
     });
-    final url = Uri.https('shodeault-rtdb.firebaseio.com','shopping-list/${item.id}.json');
+    final url = Uri.https('shopping-demo-app-cdce7-default-rtdb.firebaseio.com','shopping-list/${item.id}.json');
     final response = await http.delete(url);
 
     if (response.statusCode >= 400) {
@@ -125,7 +132,7 @@ class _GroceryScreenState extends State<GroceryScreen> {
   if (_groceryItems.isNotEmpty) {
     bodyContent = ListView.builder(
           itemCount: _groceryItems.length,
-          itemBuilder: (ctx, index) => Dismissible(
+          itemBuilder: (ctx, index) => Dismissible(             //* For Sliding Remove Items from list 
             key: ValueKey(_groceryItems[index].id),
             onDismissed: (direction) => _removeItem(_groceryItems[index]),
 
